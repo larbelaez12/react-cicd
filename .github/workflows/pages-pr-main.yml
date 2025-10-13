@@ -1,0 +1,72 @@
+# Nombre visible del workflow en la pestaña Actions
+name: Pages Preview (PR develop → main)
+
+# Disparadores del workflow:
+# Se ejecuta cuando se abre, se sincroniza (nuevos commits) o se reabre
+# un Pull Request cuyo destino (base) es la rama 'main'.
+on:
+  pull_request:
+    branches: ['main']                        # ← el PR debe tener como destino main
+    types: [opened, synchronize, reopened]
+
+# Permisos mínimos necesarios para construir y publicar a GitHub Pages.
+permissions:
+  contents: read   # leer el repo
+  pages: write     # publicar en Pages
+  id-token: write  # autenticación OIDC para deploy
+
+# Concurrency evita despliegues simultáneos de preview para el mismo grupo.
+concurrency:
+  group: "pages-pr"
+  cancel-in-progress: true
+
+jobs:
+  # Job de construcción: solo corre si el PR es exactamente develop → main
+  build:
+    # Filtro adicional: asegura que la base sea 'main' y la rama de origen sea 'develop'
+    if: github.base_ref == 'main' && github.head_ref == 'develop'
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1) Descarga el código del PR en el runner
+      - uses: actions/checkout@v4
+
+      # 2) Configura Node.js (versión 20) y habilita caché npm para acelerar instalaciones
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      # 3) Instala dependencias de manera limpia y reproducible
+      - name: Install
+        run: npm ci
+
+      # 4) Construye el sitio estático listo para publicar
+      - name: Build
+        run: npm run build
+
+      # 5) Sube el contenido generado (p. ej., 'dist' en Vite) como artifact para Pages
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist   # Vite por defecto (si usas CRA, normalmente es 'build/')
+
+  # Job de despliegue de la vista previa en GitHub Pages
+  deploy:
+    # Debe esperar a que 'build' termine correctamente
+    needs: build
+    # Vuelve a aplicar el filtro (defensa adicional)
+    if: github.base_ref == 'main' && github.head_ref == 'develop'
+    runs-on: ubuntu-latest
+
+    # Declara el environment de Pages para que GitHub muestre la URL del deployment
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      # 6) Publica el artifact subido anteriormente como una 'preview' de Pages
+      - name: Deploy to GitHub Pages (Preview)
+        id: deployment
+        uses: actions/deploy-pages@v4
