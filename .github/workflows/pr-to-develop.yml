@@ -1,0 +1,41 @@
+# Nombre visible del workflow en la pestaña Actions
+name: React CI (PR → develop)
+
+# Disparadores del workflow:
+# Se ejecuta cuando se abre, actualiza (commits nuevos) o reabre
+# un Pull Request cuyo TARGET es la rama 'develop'.
+on:
+  pull_request:
+    branches: ['develop']         # ← PR cuyo destino es develop
+    types: [opened, synchronize, reopened]
+
+jobs:
+  # Definición del job principal de construcción y pruebas
+  build-and-test:
+    # Usamos un runner hospedado por GitHub con Ubuntu
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1) Descarga el código fuente del PR (HEAD) en el runner
+      - uses: actions/checkout@v4
+
+      # 2) Configura Node.js en la versión indicada y habilita caché de npm
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'      # versión de Node a usar
+          cache: 'npm'            # activa caché basada en package-lock.json
+
+      # 3) Instala dependencias de manera limpia y reproducible
+      - name: Install
+        run: npm ci
+
+      # 4) Ejecuta la batería de pruebas; si no existe script 'test',
+      #    no falla gracias a --if-present. Se desactiva el watch.
+      - name: Tests
+        run: npm test --if-present -- --watchAll=false
+
+      # 5) Construye la aplicación para asegurar que el proyecto compila
+      #    correctamente (útil como verificación previa al merge)
+      - name: Build
+        run: npm run build
