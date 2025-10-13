@@ -1,12 +1,12 @@
 # Nombre visible en la pestaña Actions
-name: Deploy Preview (PR → main)
+name: Deploy Preview (PR → develop)
 
 # Disparadores:
 # Se ejecuta automáticamente cuando se abre, actualiza o reabre
-# un Pull Request cuyo destino es 'main'
+# un Pull Request cuyo destino es 'develop'
 on:
   pull_request:
-    branches: ['main']
+    branches: ['develop']
     types: [opened, synchronize, reopened]
 
 # Permisos necesarios para publicar en GitHub Pages
@@ -47,9 +47,9 @@ jobs:
       - name: Build project
         run: npm run build
 
-      # 5️⃣ Subir el artefacto del build para Pages
+      # 5️⃣ Subir el artefacto del build para Pages (actualizado a v4)
       - name: Upload build artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v4
         with:
           path: ./build
 

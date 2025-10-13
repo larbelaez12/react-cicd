@@ -47,9 +47,9 @@ jobs:
       - name: Build project
         run: npm run build
 
-      # 5️⃣ Subir el artefacto del build para Pages
+      # 5️⃣ Subir el artefacto del build para Pages (actualizado a v4)
       - name: Upload build artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v4
         with:
           path: ./build
 

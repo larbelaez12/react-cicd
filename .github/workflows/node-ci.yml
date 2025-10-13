@@ -10,24 +10,29 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # 1️⃣ Clona el repositorio
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      # 2️⃣ Instala Node.js versión 20
+      - name: Use Node.js 20
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'npm'
 
+      # 3️⃣ Instala dependencias
       - name: Install dependencies
         run: npm ci
 
+      # 4️⃣ Corre los tests (si existen)
       - name: Run tests
         run: npm test --if-present
 
+      # 5️⃣ Construye el proyecto
       - name: Build project
         run: npm run build
 
+      # 6️⃣ Sube los archivos listos para producción
       - name: Upload production-ready build files
         uses: actions/upload-artifact@v4
         with:
