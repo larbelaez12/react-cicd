@@ -1,0 +1,59 @@
+# Nombre visible en la pestaña Actions
+name: Deploy Preview (PR → main)
+
+# Disparadores:
+# Se ejecuta automáticamente cuando se abre, actualiza o reabre
+# un Pull Request cuyo destino es 'main'
+on:
+  pull_request:
+    branches: ['main']
+    types: [opened, synchronize, reopened]
+
+# Permisos necesarios para publicar en GitHub Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Concurrency evita múltiples despliegues simultáneos del mismo PR
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      # 1️⃣ Checkout del código fuente del PR
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 2️⃣ Configurar Node.js y cachear dependencias
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      # 3️⃣ Instalar dependencias
+      - name: Install dependencies
+        run: npm ci
+
+      # 4️⃣ Construir el proyecto (React build)
+      - name: Build project
+        run: npm run build
+
+      # 5️⃣ Subir el artefacto del build para Pages
+      - name: Upload build artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./build
+
+      # 6️⃣ Desplegar a una preview temporal en GitHub Pages
+      - name: Deploy to GitHub Pages (preview)
+        id: deployment
+        uses: actions/deploy-pages@v4
